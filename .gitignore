@@ -1,0 +1,16 @@
+# Build outputs
+.pio/
+build/
+*.hex
+*.elf
+*.eep
+*.map
+*.o
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Arduino local/generated files
+*.tmp

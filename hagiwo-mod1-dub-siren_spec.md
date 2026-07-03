@@ -1,7 +1,6 @@
 # hagiwo-mod1-dub-siren.ino 仕様解析
 
-対象ファイル: `hagiwo-mod1-dub-siren.ino`  
-解析日: 2026-06-18
+対象ファイル: `hagiwo-mod1-dub-siren.ino`
 
 ## 1. 概要
 
@@ -283,14 +282,3 @@ SQUARE波形は「Smoothed」とコメントされていますが、区間境界
 ### 10.3 初回POT読み取りが半分になる
 
 平滑化用の前回値が 0 で初期化されているため、初回読み取りは実値の約半分になります。起動直後の反応を正確にしたい場合は、初回だけ実読み取り値をそのまま使う処理が考えられます。
-
-## 11. 現在のGitHubとの差分確認
-
-確認時点で、ローカルの `main` と GitHub の `main` は同じコミットでした。
-
-- ローカル `HEAD`: `33bc768bb3160855c026e839d251c46034f1b28e`
-- ローカル `origin/main`: `33bc768bb3160855c026e839d251c46034f1b28e`
-- GitHub `refs/heads/main`: `33bc768bb3160855c026e839d251c46034f1b28e`
-- `hagiwo-mod1-dub-siren.ino` に差分なし
-
-この仕様書ファイルは現行の `.ino` に合わせて更新しています。
