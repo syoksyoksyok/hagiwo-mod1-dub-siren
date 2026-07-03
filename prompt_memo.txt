@@ -1,8 +1,0 @@
-# Project Memo
-
-This repository contains the public HAGIWO MOD1 Dub Siren sketch and supporting specification notes.
-
-Private development paths, local machine notes, and scratch history were removed from this memo before public release preparation.
-
-See `README.md` for usage and build instructions.
-See `hagiwo-mod1-dub-siren_spec.md` for detailed behavior and hardware mapping.

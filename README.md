@@ -2,6 +2,8 @@
 
 Arduino Nano / ATmega328P sketch for a HAGIWO MOD1 based dub siren.
 
+This is an unofficial firmware for the HAGIWO MOD1 hardware. HAGIWO MOD1 is designed by HAGIWO / ハギヲさん.
+
 ## Features
 
 - D11 / F4 tone output
@@ -30,17 +32,26 @@ Arduino Nano / ATmega328P sketch for a HAGIWO MOD1 based dub siren.
 | Waveform / manual gate button | D4 |
 | LFO LED | D3 |
 
-## Build
+## Build / Upload
 
 The sketch targets Arduino Nano / ATmega328P.
 
-PlatformIO check example:
+### Arduino IDE upload
+
+1. Install Arduino IDE.
+2. Open `hagiwo-mod1-dub-siren.ino`.
+3. Select `Tools` > `Board` > `Arduino AVR Boards` > `Arduino Nano`.
+4. Select `Tools` > `Processor` > `ATmega328P`.
+5. Select the serial port from `Tools` > `Port`.
+6. Click `Upload`.
+
+If upload fails, select `Tools` > `Processor` > `ATmega328P (Old Bootloader)` and upload again. Many older Nano-compatible boards need the old bootloader setting.
+
+### PlatformIO check
 
 ```powershell
 pio ci hagiwo-mod1-dub-siren.ino --board nanoatmega328
 ```
-
-Arduino IDE can also compile the `.ino` directly for Arduino Nano / ATmega328P.
 
 ## First-time user manual
 
@@ -103,9 +114,14 @@ LFO 波形は、SINE、SQUARE、SAWTOOTH、REVERSE SAWTOOTH の順に切り替�
 - `README.md`: overview, build command, and first-time user manual.
 - `hagiwo-mod1-dub-siren_spec.md`: detailed behavior and hardware mapping notes.
 
+## Credits
+
+HAGIWO MOD1 is designed by HAGIWO / ハギヲさん. HAGIWO's MOD series hardware and source examples are published with a license-free / CC0 policy. This repository contains an unofficial firmware for that hardware.
+
 ## License
 
-No license has been selected yet. Add a `LICENSE` file before public release if you want to explicitly allow reuse, modification, or redistribution.
+This firmware and documentation are released under the MIT License. See `LICENSE` for details.
 
 ## Notes
+
 D9 shares the F2 signal path with A4, and D10 shares the F3 signal path with A5 on the MOD1 hardware. This sketch uses D9 and D10 only as high-impedance digital inputs.

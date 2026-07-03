@@ -1,8 +1,12 @@
 /*
+ * SPDX-License-Identifier: MIT
+ *
  * HAGIWO MOD1 Dub Siren
  *
  * Arduino Nano / ATmega328P sketch that turns a HAGIWO MOD1 into a
  * tone()-based dub siren.
+ *
+ * Copyright (c) 2026 syoksyoksyok
  *
  * Features:
  * - D11 / F4 tone output.
@@ -45,7 +49,7 @@ struct AudioConfig {
   static const unsigned int LED_PWM_PERIOD_US = 4096;  // Software PWM period for D3
 };
 
-// Waveform types (Removed RANDOM_HOLD)
+// Waveform types
 enum Waveform {
   SINE = 0,
   SQUARE = 1,

@@ -2,6 +2,10 @@
 
 対象ファイル: `hagiwo-mod1-dub-siren.ino`
 
+ライセンス: MIT License
+
+この仕様書は、HAGIWO / ハギヲさん設計の HAGIWO MOD1 ハードウェア向け非公式ファームウェアの説明です。
+
 ## 1. 概要
 
 このスケッチは、Arduino の `tone()` 関数を使ってダブサイレン風の発振音を出すプログラムです。
