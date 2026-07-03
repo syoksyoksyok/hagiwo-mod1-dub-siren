@@ -6,6 +6,7 @@
  * - Initial LFO waveform: Sine wave (changed from Square).
  * - POT3 controls only LFO speed; it no longer mutes the output.
  * - A3 / D17 gate input enables sound while HIGH and stops sound while LOW.
+ * - Button tap changes LFO waveform; button hold over 0.5s enables sound while held.
  * - LED blinks at LFO speed with brightness controlled by LFO depth.
  *
  * Refactoring Improvements:
@@ -55,7 +56,8 @@ struct AudioConfig {
   static constexpr float STEP_MAX = 0.8;
   static const int AMP_MIN = 0;                // LFO amplitude range
   static const int AMP_MAX = 600;
-  static const unsigned long DEBOUNCE_DELAY = 200;  // Button debounce time
+  static const unsigned long DEBOUNCE_DELAY = 30;   // Button debounce time
+  static const unsigned long LONG_PRESS_DURATION = 500;  // Manual gate hold time
   static const unsigned int LED_PWM_PERIOD_US = 4096;  // Software PWM period for D3
 };
 
@@ -72,8 +74,10 @@ struct State {
   Waveform waveformType = SINE;
   float angle = 0.0;
   unsigned long lastUpdateTime = 0;
-  unsigned long lastButtonPress = 0;
-  bool lastGateActive = false;
+  unsigned long buttonPressStart = 0;
+  bool buttonWasPressed = false;
+  bool buttonLongPressActive = false;
+  bool lastAudioActive = false;
   uint8_t ledBrightness = 0;
 } state;
 
@@ -116,26 +120,40 @@ void setup() {
 }
 
 void loop() {
-  if (digitalRead(PinConfig::BUTTON) == LOW && millis() - state.lastButtonPress > AudioConfig::DEBOUNCE_DELAY) {
-    state.lastButtonPress = millis();
-    state.waveformType = static_cast<Waveform>((state.waveformType + 1) % 4);
+  unsigned long now = millis();
+  bool buttonPressed = digitalRead(PinConfig::BUTTON) == LOW;
+
+  if (buttonPressed && !state.buttonWasPressed) {
+    state.buttonWasPressed = true;
+    state.buttonPressStart = now;
+    state.buttonLongPressActive = false;
+  } else if (buttonPressed && !state.buttonLongPressActive && now - state.buttonPressStart >= AudioConfig::LONG_PRESS_DURATION) {
+    state.buttonLongPressActive = true;
+  } else if (!buttonPressed && state.buttonWasPressed) {
+    unsigned long pressDuration = now - state.buttonPressStart;
+    if (!state.buttonLongPressActive && pressDuration >= AudioConfig::DEBOUNCE_DELAY && pressDuration < AudioConfig::LONG_PRESS_DURATION) {
+      state.waveformType = static_cast<Waveform>((state.waveformType + 1) % 4);
+    }
+    state.buttonWasPressed = false;
+    state.buttonLongPressActive = false;
   }
 
   PotValues pots = readPotValues();
 
   bool gateActive = digitalRead(PinConfig::GATE_INPUT) == HIGH;
-  if (!gateActive && state.lastGateActive) {
+  bool audioActive = gateActive || state.buttonLongPressActive;
+  if (!audioActive && state.lastAudioActive) {
     noTone(PinConfig::SPEAKER);
     digitalWrite(PinConfig::SPEAKER, LOW);
   }
 
-  if (gateActive && !state.lastGateActive) {
+  if (audioActive && !state.lastAudioActive) {
     state.angle = 0.0;
     state.lastUpdateTime = 0;
   }
-  state.lastGateActive = gateActive;
+  state.lastAudioActive = audioActive;
 
-  updateNormalOperation(pots.baseFreq, pots.amplitude, pots.step, gateActive);
+  updateNormalOperation(pots.baseFreq, pots.amplitude, pots.step, audioActive);
   updateLedPwm();
 }
 

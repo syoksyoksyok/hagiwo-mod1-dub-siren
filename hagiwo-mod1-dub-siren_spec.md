@@ -16,7 +16,8 @@
 - LFO波形は4種類。
 - 初期波形はサイン波。
 - A3 / D17 のGATE入力がHIGHの間だけ発音。
-- POT3 はLFO速度専用。発音/無音はGATE入力で制御。
+- POT3 はLFO速度専用。発音/無音はGATE入力またはボタン長押しで制御。
+- ボタン短押しはLFO波形切替、0.5秒以上の長押しは押している間だけ発音。
 - LEDはLFO速度で点滅し、LFO深さに応じてソフトウェアPWMで明るさが変わる。
 - POT値には前回平滑化値との平均による簡易平滑化あり。
 - 周波数は 130Hz から 3000Hz に制限。
@@ -31,7 +32,7 @@
 | LFO振幅 POT | A1 | `PinConfig::AMP_POT` |
 | LFO速度 POT | A2 | `PinConfig::SPEED_POT` |
 | GATE入力 | A3 / D17 | `PinConfig::GATE_INPUT` |
-| 波形切替ボタン | D4 | `PinConfig::BUTTON` |
+| 波形切替/手動発音ボタン | D4 | `PinConfig::BUTTON` |
 | LFO表示LED | D3 | `PinConfig::LED` |
 
 ボタン入力は `INPUT_PULLUP` です。そのため、ボタンが押されていないときは HIGH、押されたときは LOW として扱われます。
@@ -51,7 +52,7 @@
 | A5 | `A5` | `F3` ジャック `J3` のT端子側と同一系統 | 未使用 |
 | D10 | `D10` | `F3` ジャック `J3` のT端子。`C8 1uF`、`R6 1k`、`R7 100k` プルダウン、`D7/D8` クランプ、`C9 0.01uF` | 未使用 |
 | D11 | `D11` | `F4` ジャック `J4` のT端子。`C10 1uF`、`R8 1k`、保護ダイオード経由 | 音声出力 `PinConfig::SPEAKER` |
-| D4 | `D4` | `SW1` 押しボタン。`R11 10k` 経由でGNDへ落ちる | 波形切替ボタン `PinConfig::BUTTON` |
+| D4 | `D4` | `SW1` 押しボタン。`R11 10k` 経由でGNDへ落ちる | 短押しで波形切替、長押しで手動発音 `PinConfig::BUTTON` |
 | D3 | `D3` | LED回路。`R10 10k` とLED `D4` を経由してGND | LFO表示LED `PinConfig::LED` |
 
 `POT1`、`POT2`、`POT3` はいずれも `100k` のポテンショメータで、両端が `+5V` と `GND`、ワイパーが各Arduinoアナログ入力へ接続されています。
@@ -114,7 +115,7 @@ map(pitchValue, 0, 1023, 130, 2100)
 
 この `step` は更新ごとに `state.angle` へ加算されます。更新周期は 10ms なので、値が大きいほどLFO周期が速くなります。
 
-現在の実装では、POT3はLFO速度だけを担当します。発音/無音はA3 / D17 のGATE入力で制御します。
+現在の実装では、POT3はLFO速度だけを担当します。発音/無音はA3 / D17 のGATE入力、またはD4ボタン長押しで制御します。
 
 ### 3.4 GATE入力
 
@@ -124,7 +125,12 @@ F1回路には `R12 100k` のプルダウンがあるため、コード側は `I
 
 ### 3.5 ボタン
 
-ボタンを押すたびに波形が次の順番で切り替わります。
+D4ボタンは押している時間で動作が変わります。
+
+- 0.5秒未満の短押し: LFO波形を次へ切り替える。
+- 0.5秒以上の長押し: 押している間だけ手動GATEとして発音する。
+
+短押し時のLFO波形切替順は次の通りです。
 
 1. `SINE`
 2. `SQUARE`
@@ -132,15 +138,15 @@ F1回路には `R12 100k` のプルダウンがあるため、コード側は `I
 4. `REVERSE_SAWTOOTH`
 5. `SINE` に戻る
 
-デバウンス時間は 200ms です。
+短押し判定はボタンを離したタイミングで行います。長押しで発音した場合は、ボタンを離しても波形切替は行いません。
 
 ## 4. 周波数生成仕様
 
 通常動作時は次の流れで周波数を決めます。
 
 1. POTから `baseFreq`, `amplitude`, `step` を読む。
-2. A3 / D17 のGATE入力がLOWなら `noTone()` で停止し、周波数更新を行わない。
-3. A3 / D17 のGATE入力立ち上がりがあれば `state.angle` を `0.0` に戻す。
+2. A3 / D17 のGATE入力またはD4ボタン長押しが有効なら発音状態、どちらも無効なら `noTone()` で停止する。
+3. 非発音状態から発音状態へ変化したら `state.angle` を `0.0` に戻す。
 4. `step` を `state.angle` に加算する。
 5. `state.angle` が `TWO_PI` 以上なら `TWO_PI` を引いて循環させる。
 6. 現在の波形に応じて `lfoValue` を計算する。
@@ -195,18 +201,20 @@ sin(state.angle) * amplitude
 | `waveformType` | 現在のLFO波形 |
 | `angle` | LFOの現在位相 |
 | `lastUpdateTime` | 通常動作更新の前回時刻 |
-| `lastButtonPress` | ボタン押下の前回時刻 |
-| `lastGateActive` | 前回ループ時のGATE入力状態。立ち上がり検出に使う |
+| `buttonPressStart` | ボタンを押し始めた時刻 |
+| `buttonWasPressed` | 前回ループ時にボタンが押されていたか |
+| `buttonLongPressActive` | ボタン長押しによる手動発音が有効か |
+| `lastAudioActive` | 前回ループ時に発音状態だったか。立ち上がり検出に使う |
 | `ledBrightness` | ソフトウェアPWMで使うLED輝度。0-255 |
 
 ## 7. GATE入力と発音仕様
 
-現在の実装では、POT3による無音制御はありません。発音/無音はA3 / D17 のGATE入力で制御します。
+現在の実装では、POT3による無音制御はありません。発音/無音はA3 / D17 のGATE入力、またはD4ボタン長押しで制御します。
 
-- GATE HIGH: `updateNormalOperation()` を呼び、D11へ `tone()` 出力する。
-- GATE LOW: `noTone()` を呼び、D11をLOWにする。LEDはGATEに関係なくLFO表示を続ける。
+- GATE HIGH またはボタン長押し中: `updateNormalOperation()` を呼び、D11へ `tone()` 出力する。
+- GATE LOW かつボタン長押しなし: `noTone()` を呼び、D11をLOWにする。LEDは発音状態に関係なくLFO表示を続ける。
 
-GATEがLOWからHIGHへ変化したときは、`state.angle = 0.0` と `state.lastUpdateTime = 0` を設定します。これにより、GATEが来たタイミングでLFOが先頭から再開します。
+非発音状態から発音状態へ変化したときは、`state.angle = 0.0` と `state.lastUpdateTime = 0` を設定します。これにより、GATEまたはボタン長押しで発音が始まるタイミングでLFOが先頭から再開します。
 
 ## 8. 実装メモ
 
