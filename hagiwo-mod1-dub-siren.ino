@@ -6,7 +6,7 @@
  * - Initial LFO waveform: Sine wave (changed from Square).
  * - POT3 controls only LFO speed; it no longer mutes the output.
  * - A3 / D17 gate input enables sound while HIGH and stops sound while LOW.
- * - Button tap changes LFO waveform; button hold over 0.5s enables sound while held.
+ * - Button tap changes LFO waveform; button hold over 0.23s enables sound while held.
  * - LED blinks at LFO speed with brightness controlled by LFO depth.
  *
  * Refactoring Improvements:
@@ -57,7 +57,7 @@ struct AudioConfig {
   static const int AMP_MIN = 0;                // LFO amplitude range
   static const int AMP_MAX = 600;
   static const unsigned long DEBOUNCE_DELAY = 30;   // Button debounce time
-  static const unsigned long LONG_PRESS_DURATION = 500;  // Manual gate hold time
+  static const unsigned long LONG_PRESS_DURATION = 230;  // Manual gate hold time
   static const unsigned int LED_PWM_PERIOD_US = 4096;  // Software PWM period for D3
 };
 
@@ -166,7 +166,14 @@ void updateNormalOperation(float baseFreq, float amplitude, float step, bool aud
 
   float lfoValue = calculateLfoValue(amplitude);
   uint8_t depthBrightness = static_cast<uint8_t>(map(static_cast<int>(amplitude), AudioConfig::AMP_MIN, AudioConfig::AMP_MAX, 0, 255));
-  state.ledBrightness = lfoValue > 0 ? depthBrightness : 0;
+  if (amplitude <= 0.0 || depthBrightness == 0) {
+    state.ledBrightness = 0;
+  } else {
+    float ledLevel = (lfoValue + amplitude) / (2.0 * amplitude);
+    if (ledLevel < 0.0) ledLevel = 0.0;
+    if (ledLevel > 1.0) ledLevel = 1.0;
+    state.ledBrightness = static_cast<uint8_t>(ledLevel * depthBrightness);
+  }
 
   if (!audioEnabled) return;
 
