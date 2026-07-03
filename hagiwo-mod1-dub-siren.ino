@@ -1,37 +1,18 @@
 /*
- * Dub Siren Machine (tone() function version / v5)
+ * HAGIWO MOD1 Dub Siren
+ *
+ * Arduino Nano / ATmega328P sketch that turns a HAGIWO MOD1 into a
+ * tone()-based dub siren.
  *
  * Features:
- * - Minimum frequency: 130Hz, upper limit: 2100Hz (clamped to 3000Hz for safety).
- * - Initial LFO waveform: Sine wave (changed from Square).
- * - POT3 controls only LFO speed; it no longer mutes the output.
- * - A3 / D17 gate input enables sound while HIGH and stops sound while LOW.
- * - D9 kill input mutes audio while HIGH; D10 pauses the LFO while HIGH.
- * - Button tap changes LFO waveform; button hold over 0.23s enables sound while held.
- * - LED blinks at LFO speed with brightness controlled by LFO depth.
- *
- * Refactoring Improvements:
- * - Modularized into functions: readPotValues, updateNormalOperation, calculateLfoValue.
- * - Grouped constants into PinConfig and AudioConfig for clarity.
- * - Reduced global variables, cached POT values to minimize analogRead().
- * - Simplified state management with clear transitions.
- * - Added POT value smoothing for stability.
- *
- * Previous Fixes (2025-09-16):
- * - Moved PotValues struct definition before readPotValues to fix "does not name a type" error.
- * - Corrected analogRead(PinConfig::SPEAKER) to PinConfig::SPEED_POT in readPotValues.
- * - Swapped RANDOM_HOLD and SINE in Waveform enum.
- *
- * Changes (2025-09-16):
- * - Removed RANDOM_HOLD waveform and related logic/variables.
- * - Updated Waveform enum to include only SINE, SQUARE, SAWTOOTH, REVERSE_SAWTOOTH.
- * - Removed randomSeed and stdlib.h dependency.
- * - Updated comments to reflect removal of random waveform.
- * - Changed initial waveform to SINE.
- *
- * Software-side Noise Reduction (2025-10-01):
- * - Enhanced smoothing for all POT values.
- * - Adjusted SQUARE and SAWTOOTH waveforms to reduce abrupt frequency changes.
+ * - D11 / F4 tone output.
+ * - A0 pitch, A1 LFO depth, A2 LFO speed.
+ * - A3 / D17 gate input enables sound while HIGH.
+ * - D9 kill input mutes audio while HIGH.
+ * - D10 pauses the LFO while HIGH.
+ * - D4 button tap changes LFO waveform.
+ * - D4 button hold for 0.23 seconds or longer enables sound while held.
+ * - D3 LED shows LFO speed and depth using software PWM.
  */
 
 #include <math.h>   // For sin()
