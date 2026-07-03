@@ -16,6 +16,8 @@
 - LFO波形は4種類。
 - 初期波形はサイン波。
 - A3 / D17 のGATE入力がHIGHの間だけ発音。
+- D9 のKILL入力がHIGHの間は強制ミュート。
+- D10 のLFO PAUSE入力がHIGHの間はLFO位相を停止。
 - POT3 はLFO速度専用。発音/無音はGATE入力またはボタン長押しで制御。
 - ボタン短押しはLFO波形切替、0.23秒以上の長押しは押している間だけ発音。
 - LEDはLFO速度で明暗変化し、LFO深さに応じてソフトウェアPWMの最大輝度が変わる。
@@ -32,6 +34,8 @@
 | LFO振幅 POT | A1 | `PinConfig::AMP_POT` |
 | LFO速度 POT | A2 | `PinConfig::SPEED_POT` |
 | GATE入力 | A3 / D17 | `PinConfig::GATE_INPUT` |
+| KILL入力 | D9 | `PinConfig::KILL_INPUT` |
+| LFO PAUSE入力 | D10 | `PinConfig::LFO_PAUSE_INPUT` |
 | 波形切替/手動発音ボタン | D4 | `PinConfig::BUTTON` |
 | LFO表示LED | D3 | `PinConfig::LED` |
 
@@ -47,17 +51,17 @@
 | A1 | `A1` | `POT2` / `RV2` のワイパー。`R2 10k` 経由、`C3 0.01uF` でGNDへフィルタ | LFO振幅 `PinConfig::AMP_POT` |
 | A2 | `A2` | `POT3` / `RV3` のワイパー。`R3 10k` 経由、`C4 0.01uF` でGNDへフィルタ | LFO速度 `PinConfig::SPEED_POT` |
 | A3 / D17 | `A3_D17` | `F1` ジャック `J1` のT端子。`R9 1k` 経由、`R12 100k` プルダウン、`D1/D2` クランプ、`C12 0.01uF` | GATE入力 `PinConfig::GATE_INPUT` |
-| A4 | `A4` | `F2` ジャック `J2` のT端子側と同一系統 | 未使用 |
-| D9 | `D9` | `F2` ジャック `J2` のT端子。`C6 1uF`、`R4 1k`、`R5 100k` プルダウン、`D3/D6` クランプ、`C5 0.01uF` | 未使用 |
-| A5 | `A5` | `F3` ジャック `J3` のT端子側と同一系統 | 未使用 |
-| D10 | `D10` | `F3` ジャック `J3` のT端子。`C8 1uF`、`R6 1k`、`R7 100k` プルダウン、`D7/D8` クランプ、`C9 0.01uF` | 未使用 |
+| A4 | `A4` | `F2` ジャック `J2` のT端子側と同一系統 | D9と同一ネットのため直接は未使用 |
+| D9 | `D9` | `F2` ジャック `J2` のT端子。`C6 1uF`、`R4 1k`、`R5 100k` プルダウン、`D3/D6` クランプ、`C5 0.01uF` | KILL入力 `PinConfig::KILL_INPUT` |
+| A5 | `A5` | `F3` ジャック `J3` のT端子側と同一系統 | D10と同一ネットのため直接は未使用 |
+| D10 | `D10` | `F3` ジャック `J3` のT端子。`C8 1uF`、`R6 1k`、`R7 100k` プルダウン、`D7/D8` クランプ、`C9 0.01uF` | LFO PAUSE入力 `PinConfig::LFO_PAUSE_INPUT` |
 | D11 | `D11` | `F4` ジャック `J4` のT端子。`C10 1uF`、`R8 1k`、保護ダイオード経由 | 音声出力 `PinConfig::SPEAKER` |
 | D4 | `D4` | `SW1` 押しボタン。`R11 10k` 経由でGNDへ落ちる | 短押しで波形切替、長押しで手動発音 `PinConfig::BUTTON` |
 | D3 | `D3` | LED回路。`R10 10k` とLED `D4` を経由してGND | LFO表示LED `PinConfig::LED` |
 
 `POT1`、`POT2`、`POT3` はいずれも `100k` のポテンショメータで、両端が `+5V` と `GND`、ワイパーが各Arduinoアナログ入力へ接続されています。
 
-`F1` から `F4` は `AudioJack2_SwitchT` として描かれており、S端子はGNDに接続されています。T端子が信号線で、各ジャックの信号は抵抗、プルダウン、クランプダイオード、コンデンサを経由してArduinoピンへ入っています。現行スケッチでは `F4` / `D11` を音声出力、`F1` / `A3_D17` をGATE入力として使用し、`F2`、`F3` は使用していません。
+`F1` から `F4` は `AudioJack2_SwitchT` として描かれており、S端子はGNDに接続されています。T端子が信号線で、各ジャックの信号は抵抗、プルダウン、クランプダイオード、コンデンサを経由してArduinoピンへ入っています。現行スケッチでは `F4` / `D11` を音声出力、`F1` / `A3_D17` をGATE入力、`F2` / `D9` をKILL入力、`F3` / `D10` をLFO PAUSE入力として使用しています。
 
 ### 2.2 ジャックの入出力設定で注意する点
 
@@ -66,8 +70,8 @@
 | Jack | 主な接続ピン | 入出力の扱い |
 |---|---|---|
 | F1 | A3 / D17 | 現行スケッチではGATE入力。外部信号は基板上のプルダウンとクランプを通って入る |
-| F2 | A4 と D9 | 入力にも出力にもできるが、A4とD9が同じ信号線につながっているため設定注意 |
-| F3 | A5 と D10 | 入力にも出力にもできるが、A5とD10が同じ信号線につながっているため設定注意 |
+| F2 | A4 と D9 | 現行スケッチではD9をKILL入力として使用。A4とD9が同じ信号線につながっているため設定注意 |
+| F3 | A5 と D10 | 現行スケッチではD10をLFO PAUSE入力として使用。A5とD10が同じ信号線につながっているため設定注意 |
 | F4 | D11 | 現行スケッチでは音声出力。デジタル入力にもできるが、アナログ入力には使えない |
 
 `F2` と `F3` の「設定注意」は、1つのジャック信号線にアナログ入力ピンとデジタルI/Oピンの両方が接続されていることを指します。たとえば `F2` は `A4` と `D9` が同じネット、`F3` は `A5` と `D10` が同じネットです。
@@ -115,7 +119,7 @@ map(pitchValue, 0, 1023, 130, 2100)
 
 この `step` は更新ごとに `state.angle` へ加算されます。更新周期は 10ms なので、値が大きいほどLFO周期が速くなります。
 
-現在の実装では、POT3はLFO速度だけを担当します。発音/無音はA3 / D17 のGATE入力、またはD4ボタン長押しで制御します。
+現在の実装では、POT3はLFO速度だけを担当します。発音/無音はA3 / D17 のGATE入力、D4ボタン長押し、D9 KILL入力で制御します。D10 LFO PAUSE入力がHIGHの間は、この速度設定に関係なくLFO位相が停止します。
 
 ### 3.4 GATE入力
 
@@ -140,20 +144,29 @@ D4ボタンは押している時間で動作が変わります。
 
 短押し判定はボタンを離したタイミングで行います。長押しで発音した場合は、ボタンを離しても波形切替は行いません。
 
+### 3.6 KILL入力
+
+`D9` をデジタル入力として読みます。D9がHIGHの間は、A3 GATEやD4ボタン長押しが有効でも `noTone()` で強制ミュートします。KILL中もLFOとLED表示は動き続けます。
+
+### 3.7 LFO PAUSE入力
+
+`D10` をデジタル入力として読みます。D10がHIGHの間は `state.angle` を進めず、LFOを現在位置で停止します。音声ピッチとLED輝度は停止中のLFO位置を保持します。
+
 ## 4. 周波数生成仕様
 
 通常動作時は次の流れで周波数を決めます。
 
 1. POTから `baseFreq`, `amplitude`, `step` を読む。
-2. A3 / D17 のGATE入力またはD4ボタン長押しが有効なら発音状態、どちらも無効なら `noTone()` で停止する。
-3. 非発音状態から発音状態へ変化したら `state.angle` を `0.0` に戻す。
-4. `step` を `state.angle` に加算する。
-5. `state.angle` が `TWO_PI` 以上なら `TWO_PI` を引いて循環させる。
-6. 現在の波形に応じて `lfoValue` を計算する。
-7. `baseFreq + lfoValue` を `modulatedFreq` とする。
-8. `modulatedFreq` を 130Hz-3000Hz に制限する。
-9. `tone(D11, modulatedFreq)` で出力する。
-10. `lfoValue` を0-最大輝度へ連続変換し、LEDのPWM輝度へ反映する。最大輝度はLFO深さに応じる。
+2. D9 KILL入力がHIGHなら強制的に非発音状態にする。
+3. KILLがLOWで、A3 / D17 のGATE入力またはD4ボタン長押しが有効なら発音状態、どちらも無効なら `noTone()` で停止する。
+4. 非発音状態から発音状態へ変化したら `state.angle` を `0.0` に戻す。
+5. D10 LFO PAUSE入力がLOWなら `step` を `state.angle` に加算し、HIGHなら加算しない。
+6. `state.angle` が `TWO_PI` 以上なら `TWO_PI` を引いて循環させる。
+7. 現在の波形に応じて `lfoValue` を計算する。
+8. `baseFreq + lfoValue` を `modulatedFreq` とする。
+9. `modulatedFreq` を 130Hz-3000Hz に制限する。
+10. `tone(D11, modulatedFreq)` で出力する。
+11. `lfoValue` を0-最大輝度へ連続変換し、LEDのPWM輝度へ反映する。最大輝度はLFO深さに応じる。
 
 ## 5. LFO波形仕様
 
@@ -209,12 +222,13 @@ sin(state.angle) * amplitude
 
 ## 7. GATE入力と発音仕様
 
-現在の実装では、POT3による無音制御はありません。発音/無音はA3 / D17 のGATE入力、またはD4ボタン長押しで制御します。
+現在の実装では、POT3による無音制御はありません。発音/無音はA3 / D17 のGATE入力、D4ボタン長押し、D9 KILL入力で制御します。
 
-- GATE HIGH またはボタン長押し中: `updateNormalOperation()` を呼び、D11へ `tone()` 出力する。
-- GATE LOW かつボタン長押しなし: `noTone()` を呼び、D11をLOWにする。LEDは発音状態に関係なくLFO表示を続ける。
+- D9 KILL HIGH: GATEやボタン状態に関係なく `noTone()` で強制ミュートする。
+- D9 KILL LOW かつ、GATE HIGH またはボタン長押し中: `updateNormalOperation()` を呼び、D11へ `tone()` 出力する。
+- D9 KILL LOW かつ、GATE LOW かつボタン長押しなし: `noTone()` を呼び、D11をLOWにする。LEDは発音状態に関係なくLFO表示を続ける。
 
-非発音状態から発音状態へ変化したときは、`state.angle = 0.0` と `state.lastUpdateTime = 0` を設定します。これにより、GATEまたはボタン長押しで発音が始まるタイミングでLFOが先頭から再開します。
+非発音状態から発音状態へ変化したときは、`state.angle = 0.0` と `state.lastUpdateTime = 0` を設定します。これにより、GATEまたはボタン長押しで発音が始まるタイミングでLFOが先頭から再開します。D10 LFO PAUSEがHIGHの間は、発音中でもLFO位相を進めません。
 
 ## 8. 実装メモ
 

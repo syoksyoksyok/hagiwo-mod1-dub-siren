@@ -6,6 +6,7 @@
  * - Initial LFO waveform: Sine wave (changed from Square).
  * - POT3 controls only LFO speed; it no longer mutes the output.
  * - A3 / D17 gate input enables sound while HIGH and stops sound while LOW.
+ * - D9 kill input mutes audio while HIGH; D10 pauses the LFO while HIGH.
  * - Button tap changes LFO waveform; button hold over 0.23s enables sound while held.
  * - LED blinks at LFO speed with brightness controlled by LFO depth.
  *
@@ -42,6 +43,8 @@ struct PinConfig {
   static const int AMP_POT = A1;       // LFO amplitude potentiometer
   static const int SPEED_POT = A2;     // LFO speed potentiometer
   static const int GATE_INPUT = A3;    // External gate input on A3 / D17
+  static const int KILL_INPUT = 9;      // Kill / mute input on D9
+  static const int LFO_PAUSE_INPUT = 10; // LFO pause input on D10
   static const int BUTTON = 4;         // Waveform select button
   static const int LED = 3;            // LFO state LED
 };
@@ -115,6 +118,8 @@ void setup() {
   pinMode(PinConfig::SPEAKER, OUTPUT);
   pinMode(PinConfig::BUTTON, INPUT_PULLUP);
   pinMode(PinConfig::GATE_INPUT, INPUT);
+  pinMode(PinConfig::KILL_INPUT, INPUT);
+  pinMode(PinConfig::LFO_PAUSE_INPUT, INPUT);
   pinMode(PinConfig::LED, OUTPUT);
   digitalWrite(PinConfig::SPEAKER, LOW);
 }
@@ -141,7 +146,10 @@ void loop() {
   PotValues pots = readPotValues();
 
   bool gateActive = digitalRead(PinConfig::GATE_INPUT) == HIGH;
-  bool audioActive = gateActive || state.buttonLongPressActive;
+  bool killActive = digitalRead(PinConfig::KILL_INPUT) == HIGH;
+  bool lfoPaused = digitalRead(PinConfig::LFO_PAUSE_INPUT) == HIGH;
+  bool audioRequested = gateActive || state.buttonLongPressActive;
+  bool audioActive = audioRequested && !killActive;
   if (!audioActive && state.lastAudioActive) {
     noTone(PinConfig::SPEAKER);
     digitalWrite(PinConfig::SPEAKER, LOW);
@@ -153,16 +161,18 @@ void loop() {
   }
   state.lastAudioActive = audioActive;
 
-  updateNormalOperation(pots.baseFreq, pots.amplitude, pots.step, audioActive);
+  updateNormalOperation(pots.baseFreq, pots.amplitude, pots.step, audioActive, lfoPaused);
   updateLedPwm();
 }
 
-void updateNormalOperation(float baseFreq, float amplitude, float step, bool audioEnabled) {
+void updateNormalOperation(float baseFreq, float amplitude, float step, bool audioEnabled, bool lfoPaused) {
   if (millis() - state.lastUpdateTime < AudioConfig::UPDATE_INTERVAL) return;
   state.lastUpdateTime = millis();
 
-  state.angle += step;
-  if (state.angle >= TWO_PI) state.angle -= TWO_PI;
+  if (!lfoPaused) {
+    state.angle += step;
+    if (state.angle >= TWO_PI) state.angle -= TWO_PI;
+  }
 
   float lfoValue = calculateLfoValue(amplitude);
   uint8_t depthBrightness = static_cast<uint8_t>(map(static_cast<int>(amplitude), AudioConfig::AMP_MIN, AudioConfig::AMP_MAX, 0, 255));
