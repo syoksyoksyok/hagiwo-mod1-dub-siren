@@ -19,37 +19,36 @@
  * - D3 LED shows LFO speed and depth using software PWM.
  */
 
-#include <math.h>   // For sin()
+#include <math.h>
 
-// Configuration constants
+// Hardware and behavior configuration
 struct PinConfig {
-  static const int SPEAKER = 11;       // Audio output
-  static const int PITCH_POT = A0;     // Base pitch potentiometer
-  static const int AMP_POT = A1;       // LFO amplitude potentiometer
-  static const int SPEED_POT = A2;     // LFO speed potentiometer
-  static const int GATE_INPUT = A3;    // External gate input on A3 / D17
-  static const int KILL_INPUT = 9;      // Kill / mute input on D9
-  static const int LFO_PAUSE_INPUT = 10; // LFO pause input on D10
-  static const int BUTTON = 4;         // Waveform select button
-  static const int LED = 3;            // LFO state LED
+  static const int SPEAKER = 11;
+  static const int PITCH_POT = A0;
+  static const int AMP_POT = A1;
+  static const int SPEED_POT = A2;
+  static const int GATE_INPUT = A3;
+  static const int KILL_INPUT = 9;
+  static const int LFO_PAUSE_INPUT = 10;
+  static const int BUTTON = 4;
+  static const int LED = 3;
 };
 
 struct AudioConfig {
-  static const long UPDATE_INTERVAL = 10;      // Update every 10ms (100Hz)
-  static const int MIN_FREQ = 130;             // Minimum frequency
-  static const int MAX_FREQ = 3000;            // Safety upper limit
-  static const int BASE_FREQ_MIN = 130;        // Base frequency range
+  static const long UPDATE_INTERVAL = 10;
+  static const int MIN_FREQ = 130;
+  static const int MAX_FREQ = 3000;
+  static const int BASE_FREQ_MIN = 130;
   static const int BASE_FREQ_MAX = 2100;
-  static constexpr float STEP_MIN = 0.01;      // LFO step range
+  static constexpr float STEP_MIN = 0.01;
   static constexpr float STEP_MAX = 0.8;
-  static const int AMP_MIN = 0;                // LFO amplitude range
+  static const int AMP_MIN = 0;
   static const int AMP_MAX = 600;
-  static const unsigned long DEBOUNCE_DELAY = 30;   // Button debounce time
-  static const unsigned long LONG_PRESS_DURATION = 230;  // Manual gate hold time
-  static const unsigned int LED_PWM_PERIOD_US = 4096;  // Software PWM period for D3
+  static const unsigned long DEBOUNCE_DELAY = 30;
+  static const unsigned long LONG_PRESS_DURATION = 230;
+  static const unsigned int LED_PWM_PERIOD_US = 4096;
 };
 
-// Waveform types
 enum Waveform {
   SINE = 0,
   SQUARE = 1,
@@ -57,7 +56,6 @@ enum Waveform {
   REVERSE_SAWTOOTH = 3
 };
 
-// Global state
 struct State {
   Waveform waveformType = SINE;
   float angle = 0.0;
@@ -69,16 +67,16 @@ struct State {
   uint8_t ledBrightness = 0;
 } state;
 
-// PotValues struct for reading POT values
+// Smoothed control values used by the audio and LED update
 struct PotValues {
   float baseFreq;
   float amplitude;
   float step;
 };
 
-// Read and cache POT values with smoothing
+// Read controls once per loop and smooth the ADC values
 PotValues readPotValues() {
-  // Enhanced smoothing for all POT values using a 2-sample moving average
+  // 2-sample moving average for basic ADC noise reduction
   static int lastPitchValue = 0;
   static int lastAmpValue = 0;
   static int lastSpeedValue = 0;
@@ -179,6 +177,8 @@ void updateNormalOperation(float baseFreq, float amplitude, float step, bool aud
   tone(PinConfig::SPEAKER, modulatedFreq);
 }
 
+// D3 hardware PWM uses Timer2 on ATmega328P, which can conflict with tone().
+// Use software PWM so the LFO LED can fade while D11 outputs tone().
 void updateLedPwm() {
   static bool ledPinHigh = false;
 
@@ -203,13 +203,13 @@ void updateLedPwm() {
   }
 }
 
-// Calculate LFO value based on waveform
+// Calculate the current LFO offset
 float calculateLfoValue(float amplitude) {
   switch (state.waveformType) {
     case SINE:
       return sin(state.angle) * amplitude;
     case SQUARE:
-      // Smoothed square wave: using a sinusoidal curve for transitions
+      // Square-like wave with curved transition sections
       if (state.angle < PI) {
         if (state.angle < PI / 2) {
           return amplitude;
@@ -224,7 +224,7 @@ float calculateLfoValue(float amplitude) {
         }
       }
     case SAWTOOTH:
-      // Adjusted sawtooth: linear slope from -amplitude to +amplitude
+      // Linear slope from -amplitude to +amplitude
       return ((state.angle / TWO_PI) * 2 - 1) * amplitude;
     case REVERSE_SAWTOOTH:
       return (1.0 - (state.angle / TWO_PI)) * 2 * amplitude - amplitude;
