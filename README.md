@@ -36,7 +36,7 @@ For module operation and first-time use, see `MANUAL.md`.
 - D10 LFO pause input: pauses LFO movement while HIGH
 - D4 button:
   - short press changes LFO waveform
-  - hold for 0.23 seconds or longer to manually enable sound while held
+  - hold for 230 ms (0.23 seconds) or longer to manually enable sound while held
 - D3 LED shows LFO movement with software PWM brightness based on LFO depth
 
 ## Controls

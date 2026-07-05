@@ -16,7 +16,7 @@
  * - D9 kill input mutes audio while HIGH.
  * - D10 pauses the LFO while HIGH.
  * - D4 button tap changes LFO waveform.
- * - D4 button hold for 0.23 seconds or longer enables sound while held.
+ * - D4 button hold for 230ms or longer enables sound while held.
  * - D3 LED shows LFO speed and depth using software PWM.
  */
 
@@ -85,6 +85,7 @@ volatile bool audioEngineActive = false;
 volatile uint16_t audioCurrentCompare = 0;
 volatile uint16_t audioPendingCompare = 0;
 
+// Assumes the standard Arduino Nano 16MHz clock. Timer1 uses prescaler 8.
 uint16_t frequencyToTimerCompare(int frequency) {
   if (frequency < AudioConfig::MIN_FREQ) frequency = AudioConfig::MIN_FREQ;
   if (frequency > AudioConfig::MAX_FREQ) frequency = AudioConfig::MAX_FREQ;
