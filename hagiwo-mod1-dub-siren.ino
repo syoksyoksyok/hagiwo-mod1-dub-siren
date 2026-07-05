@@ -5,12 +5,12 @@
  * Version: v1.0.0
  *
  * Arduino Nano / ATmega328P sketch that turns a HAGIWO MOD1 into a
- * tone()-based dub siren.
+ * square-wave dub siren.
  *
  * Copyright (c) 2026 syoksyoksyok
  *
  * Features:
- * - D11 / F4 tone output.
+ * - D11 / F4 square-wave audio output.
  * - A0 pitch, A1 LFO depth, A2 LFO speed.
  * - A3 / D17 gate input enables sound while HIGH.
  * - D9 kill input mutes audio while HIGH.
@@ -20,7 +20,10 @@
  * - D3 LED shows LFO speed and depth using software PWM.
  */
 
+#include <avr/interrupt.h>
 #include <math.h>
+
+#define USE_TIMER1_AUDIO_ENGINE 1
 
 // Hardware and behavior configuration
 struct PinConfig {
@@ -50,6 +53,8 @@ struct AudioConfig {
   static const unsigned int LED_PWM_PERIOD_US = 4096;
 };
 
+
+
 enum Waveform {
   SINE = 0,
   SQUARE = 1,
@@ -74,6 +79,76 @@ struct PotValues {
   float amplitude;
   float step;
 };
+
+#if USE_TIMER1_AUDIO_ENGINE
+volatile bool audioEngineActive = false;
+volatile uint16_t audioCurrentCompare = 0;
+volatile uint16_t audioPendingCompare = 0;
+
+uint16_t frequencyToTimerCompare(int frequency) {
+  if (frequency < AudioConfig::MIN_FREQ) frequency = AudioConfig::MIN_FREQ;
+  if (frequency > AudioConfig::MAX_FREQ) frequency = AudioConfig::MAX_FREQ;
+  return static_cast<uint16_t>((F_CPU / (2UL * 8UL * static_cast<unsigned long>(frequency))) - 1);
+}
+
+ISR(TIMER1_COMPA_vect) {
+  if (!audioEngineActive) return;
+
+  PINB = _BV(PB3);
+  if (audioPendingCompare != audioCurrentCompare) {
+    audioCurrentCompare = audioPendingCompare;
+    OCR1A = audioCurrentCompare;
+  }
+}
+
+void beginAudioEngine() {
+  noInterrupts();
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1 = 0;
+  OCR1A = frequencyToTimerCompare(AudioConfig::MIN_FREQ);
+  TCCR1B = _BV(WGM12) | _BV(CS11);
+  TIMSK1 = 0;
+  interrupts();
+}
+
+void setAudioFrequency(int frequency) {
+  uint16_t compare = frequencyToTimerCompare(frequency);
+
+  noInterrupts();
+  audioPendingCompare = compare;
+  if (!audioEngineActive) {
+    PORTB &= ~_BV(PB3);
+    audioCurrentCompare = compare;
+    OCR1A = compare;
+    TCNT1 = 0;
+    audioEngineActive = true;
+    TIMSK1 |= _BV(OCIE1A);
+  }
+  interrupts();
+}
+
+void stopAudioOutput() {
+  noInterrupts();
+  audioEngineActive = false;
+  TIMSK1 &= ~_BV(OCIE1A);
+  interrupts();
+  digitalWrite(PinConfig::SPEAKER, LOW);
+}
+#else
+void beginAudioEngine() {
+}
+
+void setAudioFrequency(int frequency) {
+  tone(PinConfig::SPEAKER, frequency);
+}
+
+void stopAudioOutput() {
+  noTone(PinConfig::SPEAKER);
+  digitalWrite(PinConfig::SPEAKER, LOW);
+}
+#endif
+
 
 // Read controls once per loop and smooth the ADC values
 PotValues readPotValues() {
@@ -106,6 +181,7 @@ void setup() {
   pinMode(PinConfig::LFO_PAUSE_INPUT, INPUT);
   pinMode(PinConfig::LED, OUTPUT);
   digitalWrite(PinConfig::SPEAKER, LOW);
+  beginAudioEngine();
 }
 
 void loop() {
@@ -135,8 +211,7 @@ void loop() {
   bool audioRequested = gateActive || state.buttonLongPressActive;
   bool audioActive = audioRequested && !killActive;
   if (!audioActive && state.lastAudioActive) {
-    noTone(PinConfig::SPEAKER);
-    digitalWrite(PinConfig::SPEAKER, LOW);
+    stopAudioOutput();
   }
 
   if (audioActive && !state.lastAudioActive) {
@@ -175,11 +250,11 @@ void updateNormalOperation(float baseFreq, float amplitude, float step, bool aud
   if (modulatedFreq < AudioConfig::MIN_FREQ) modulatedFreq = AudioConfig::MIN_FREQ;
   if (modulatedFreq > AudioConfig::MAX_FREQ) modulatedFreq = AudioConfig::MAX_FREQ;
 
-  tone(PinConfig::SPEAKER, modulatedFreq);
+  setAudioFrequency(modulatedFreq);
 }
 
-// D3 hardware PWM uses Timer2 on ATmega328P, which can conflict with tone().
-// Use software PWM so the LFO LED can fade while D11 outputs tone().
+// D3 hardware PWM uses Timer2 on ATmega328P, which can conflict with Arduino tone().
+// Software PWM keeps the LED behavior identical for both audio engines.
 void updateLedPwm() {
   static bool ledPinHigh = false;
 

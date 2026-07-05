@@ -23,7 +23,7 @@ Current version: `v1.0.0`
 
 ## Features
 
-- D11 / F4 tone output
+- D11 / F4 square-wave audio output
 - A0 pitch control
 - A1 LFO depth control
 - A2 LFO speed control
