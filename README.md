@@ -61,6 +61,8 @@ For module operation and first-time use, see `MANUAL.md`.
 - `hagiwo-mod1-dub-siren_spec.md`: detailed behavior and hardware mapping notes.
 - `LICENSE`: MIT License text.
 - `CHANGELOG.md`: release history.
+- `.gitignore`: local build output and editor file ignore rules.
+- `.gitattributes`: text file line-ending rules.
 
 ## Credits
 
