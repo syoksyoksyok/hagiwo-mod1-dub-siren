@@ -281,7 +281,7 @@ Arduino の `map()` は整数演算を行い、戻り値は `long` です。
 
 ### 10.2 SQUARE波形は境界で不連続
 
-SQUARE波形は「Smoothed」とコメントされていますが、区間境界で急変する箇所があります。
+SQUARE波形はコード上で `Square-like wave with curved transition sections` とコメントされていますが、区間境界で急変する箇所があります。
 
 例えば `angle` が `PI/2` に到達した直後、戻り値が `+amplitude` から `0` へ急変します。急な周波数変化を避けたい場合は、波形設計を見直す余地があります。
 
