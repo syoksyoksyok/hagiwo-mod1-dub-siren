@@ -55,10 +55,11 @@ For module operation and first-time use, see `MANUAL.md`.
 
 ## Repository contents
 
-- `hagiwo-mod1-dub-siren.ino`: Arduino sketch.
+- `README.md`: entry point and project overview.
 - `UPLOAD_STEPS.md`: Arduino Nano upload steps for Arduino IDE and PlatformIO.
-- `MANUAL.md`: first-time user manual and control guide.
-- `hagiwo-mod1-dub-siren_spec.md`: detailed behavior and hardware mapping notes.
+- `MANUAL.md`: first-time user manual for module operation.
+- `hagiwo-mod1-dub-siren_spec.md`: technical specification for development and modification.
+- `hagiwo-mod1-dub-siren.ino`: Arduino sketch.
 - `LICENSE`: MIT License text.
 - `.gitignore`: local build output and editor file ignore rules.
 - `.gitattributes`: text file line-ending rules.
