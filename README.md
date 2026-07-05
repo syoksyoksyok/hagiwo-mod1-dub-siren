@@ -4,6 +4,8 @@ Arduino Nano / ATmega328P sketch for a HAGIWO MOD1 based dub siren.
 
 This is an unofficial firmware for the HAGIWO MOD1 hardware. HAGIWO MOD1 is designed by HAGIWO / ハギヲさん.
 
+Current version: `v1.0.0`
+
 ## Requirements
 
 - HAGIWO MOD1 hardware
@@ -129,6 +131,7 @@ LFO 波形は、SINE、SQUARE、SAWTOOTH、REVERSE SAWTOOTH の順に切り替�
 - `hagiwo-mod1-dub-siren.ino`: Arduino sketch.
 - `hagiwo-mod1-dub-siren_spec.md`: detailed behavior and hardware mapping notes.
 - `LICENSE`: MIT License text.
+- `CHANGELOG.md`: release history.
 
 ## Credits
 

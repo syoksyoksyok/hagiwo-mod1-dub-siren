@@ -2,6 +2,8 @@
 
 対象ファイル: `hagiwo-mod1-dub-siren.ino`
 
+バージョン: v1.0.0
+
 ライセンス: MIT License
 
 この仕様書は、HAGIWO / ハギヲさん設計の HAGIWO MOD1 ハードウェア向け非公式ファームウェアの説明です。

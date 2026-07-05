@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  *
  * HAGIWO MOD1 Dub Siren
+ * Version: v1.0.0
  *
  * Arduino Nano / ATmega328P sketch that turns a HAGIWO MOD1 into a
  * tone()-based dub siren.
