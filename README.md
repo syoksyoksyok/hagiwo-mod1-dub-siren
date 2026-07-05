@@ -21,7 +21,7 @@ Current version: `v1.0.0`
 5. Click `Upload`.
 6. If upload fails, try `ATmega328P (Old Bootloader)`.
 
-For detailed upload steps, see `UPLOAD.md`.
+For detailed upload steps, see `UPLOAD_STEPS.md`.
 
 For module operation and first-time use, see `MANUAL.md`.
 
@@ -56,7 +56,7 @@ For module operation and first-time use, see `MANUAL.md`.
 ## Repository contents
 
 - `hagiwo-mod1-dub-siren.ino`: Arduino sketch.
-- `UPLOAD.md`: upload instructions for Arduino IDE and PlatformIO.
+- `UPLOAD_STEPS.md`: Arduino Nano upload steps for Arduino IDE and PlatformIO.
 - `MANUAL.md`: first-time user manual and control guide.
 - `hagiwo-mod1-dub-siren_spec.md`: detailed behavior and hardware mapping notes.
 - `LICENSE`: MIT License text.
