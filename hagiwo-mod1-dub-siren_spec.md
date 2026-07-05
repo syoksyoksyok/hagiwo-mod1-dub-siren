@@ -128,7 +128,7 @@ map(pitchValue, 0, 1023, 130, 2100)
 
 ### 3.4 GATE入力
 
-`A3 / D17` をデジタル入力として読みます。GATE入力がHIGHの間だけD11へ発音し、LOWの間は音声エンジンを停止します。LOWからHIGHへ変化したときは `state.angle` を `0.0` に戻し、LFO位相を先頭から再開します。
+`A3 / D17` をデジタル入力として読みます。GATE入力がHIGHの間だけD11へ発音し、LOWの間は音声エンジンを停止します。LOWからHIGHへ変化したときは `state.angle` を `0.0` に戻し、LFO位相を先頭から再開します。実際のリセット条件はGATE単体ではなく、D9 KILL入力やD4ボタン長押しも含めた「非発音状態から発音状態への変化」です。詳細は「7. GATE入力と発音仕様」を参照してください。
 
 F1回路には `R12 100k` のプルダウンがあるため、コード側は `INPUT` として設定し、`INPUT_PULLUP` は使いません。
 
@@ -185,7 +185,7 @@ sin(state.angle) * amplitude
 
 ### 5.2 SQUARE
 
-コード上は「Smoothed square wave」とコメントされていますが、実装は完全な矩形波ではなく、区間ごとに固定値とサインカーブを組み合わせています。
+コード上は `Square-like wave with curved transition sections` とコメントされています。実装は完全な矩形波ではなく、区間ごとに固定値とサインカーブを組み合わせています。
 
 - `0 <= angle < PI/2`: `+amplitude`
 - `PI/2 <= angle < PI`: `amplitude * sin(...)`
