@@ -1,12 +1,12 @@
 # User Manual
 
-このスケッチを書き込んだ HAGIWO MOD1 を初めて使う人向けの簡易マニュアルです。
+This is a quick user manual for first-time users of a HAGIWO MOD1 running this sketch.
 
-## できること
+## What It Does
 
-ゲート信号、または本体ボタンの長押しで D11 / F4 から矩形波のサイレン音を出します。A0 で基本ピッチ、A1 で LFO の深さ、A2 で LFO の速さを調整します。LFO はピッチを揺らし、D3 の LED は同じ LFO の速さと深さを明るさで表示します。
+This sketch outputs a square-wave siren sound from D11 / F4 while a gate signal is HIGH or while the built-in button is held. A0 controls the base pitch, A1 controls the LFO depth, and A2 controls the LFO speed. The LFO modulates the pitch, and the D3 LED shows the same LFO movement with brightness based on the LFO depth.
 
-## 接続
+## Connections
 
 | MOD1 signal | Arduino pin | Role |
 |---|---:|---|
@@ -20,36 +20,38 @@
 | Button | D4 | Waveform select / manual gate |
 | LED | D3 | LFO indicator |
 
-F4 / D11 をミキサーや後段モジュールへ接続します。出力はラインレベル音声ではなく、Arduino の 5V 矩形波です。外部オーディオ機器へ接続する場合はミキサー入力やアッテネーターを使い、音量を小さめから確認してください。ヘッドホンやパッシブスピーカーへ直接接続しないでください。F1、F2、F3 に外部信号を入れる場合は 0V から 5V の範囲（正の電圧のみ）にしてください。ユーロラックなどのマイナス電圧（負電圧）を含む信号や、5Vを超える高い電圧を直接入れると回路が破損する原因になります。必ず電圧を適切な範囲に調整し、外部機器と接続するときは GND を共通にしてください。
+Connect F4 / D11 to a mixer or the next module in the signal chain. The output is not a line-level audio signal; it is a 5V square wave from the Arduino. When connecting it to external audio equipment, use a mixer input or attenuator and start with the volume low. Do not connect it directly to headphones or passive speakers.
 
-## 基本操作
+External signals connected to F1, F2, or F3 must stay within the 0V to 5V range and must be positive voltage only. Signals that include negative voltage, such as some Eurorack signals, or signals above 5V can damage the circuit if connected directly. Always scale external signals to the proper range, and make sure GND is shared when connecting external equipment.
 
-- POT1 / A0: 音の基本ピッチを変えます。
-- POT2 / A1: LFO がピッチを揺らす深さを変えます。LED の明るさ変化の深さにも反映されます。
-- POT3 / A2: LFO の速さを変えます。左端付近でも LFO は止まらず、非常に遅い動きになります。
-- F1 / A3 / D17: HIGH の間だけ発音します。
-- F2 / D9: HIGH の間は強制ミュートします。ゲートやボタンより優先されます。
-- F3 / D10: HIGH の間は LFO の進行を一時停止します。
-- Button / D4: 0.23 秒未満の短押しで LFO 波形を切り替えます。0.23 秒以上押し続けると、押している間だけ手動で発音します。
-- LED / D3: LFO の速さと深さを表示します。
+## Basic Operation
 
-LFO 波形は、SINE、SQUARE、SAWTOOTH、REVERSE SAWTOOTH の順に切り替わります。
+- POT1 / A0: Changes the base pitch.
+- POT2 / A1: Changes how deeply the LFO modulates the pitch. This also affects the depth of the LED brightness movement.
+- POT3 / A2: Changes the LFO speed. The LFO does not stop at the far-left position; it keeps moving very slowly.
+- F1 / A3 / D17: Enables sound while HIGH.
+- F2 / D9: Force-mutes the output while HIGH. This has priority over the gate and button.
+- F3 / D10: Pauses LFO movement while HIGH.
+- Button / D4: A short press under 0.23 seconds changes the LFO waveform. Holding it for 0.23 seconds or longer manually enables sound while held.
+- LED / D3: Shows the LFO speed and depth.
 
-## 最初の動作確認
+The LFO waveform changes in this order: SINE, SQUARE, SAWTOOTH, REVERSE SAWTOOTH.
 
-1. POT1、POT2、POT3 を中央付近にします。
-2. F4 / D11 をミキサーやアンプへ接続し、音量を小さめにします。
-3. ボタンを 0.23 秒以上押し続けて、押している間だけ音が出ることを確認します。
-4. POT1 を回してピッチが変わることを確認します。
-5. POT2 と POT3 を回して、音の揺れと LED の動きが変わることを確認します。
-6. ボタンを短く押して、LFO 波形が切り替わることを確認します。
-7. F1 / A3 に 5V ゲートを入れて、ゲートが HIGH の間だけ音が出ることを確認します。
-8. F2 / D9 に HIGH を入れてミュート、F3 / D10 に HIGH を入れて LFO 一時停止を確認します。
+## Initial Test
 
-## 音が出ないとき
+1. Set POT1, POT2, and POT3 near the center position.
+2. Connect F4 / D11 to a mixer or amplifier, and start with the volume low.
+3. Hold the button for 0.23 seconds or longer and confirm that sound is produced only while the button is held.
+4. Turn POT1 and confirm that the pitch changes.
+5. Turn POT2 and POT3 and confirm that the pitch movement and LED movement change.
+6. Press the button briefly and confirm that the LFO waveform changes.
+7. Send a 5V gate to F1 / A3 and confirm that sound is produced only while the gate is HIGH.
+8. Send HIGH to F2 / D9 to confirm mute behavior, and send HIGH to F3 / D10 to confirm LFO pause behavior.
 
-- F4 / D11 から出力を取っているか確認してください。
-- F1 / A3 のゲートが LOW の場合、ボタンを 0.23 秒以上押して手動発音できるか確認してください。
-- F2 / D9 が HIGH になっていると強制ミュートされます。
-- ミキサーやアンプの入力音量が下がっていないか確認してください。
-- MOD1 と Arduino Nano に正しく 5V と GND が供給されているか確認してください。
+## Troubleshooting
+
+- Confirm that the output is taken from F4 / D11.
+- If the F1 / A3 gate is LOW, hold the button for 0.23 seconds or longer and check whether manual sound output works.
+- If F2 / D9 is HIGH, the output is force-muted.
+- Confirm that the mixer or amplifier input volume is not turned down.
+- Confirm that the MOD1 and Arduino Nano are receiving proper 5V and GND.
