@@ -41,17 +41,17 @@ For module operation and first-time use, see `MANUAL_en.md`.
 
 ## Controls
 
-| Function | Pin | POT |
-|---|---:|---:|
-| Audio output | D11 | - |
-| Pitch pot | A0 | POT1 |
-| LFO depth pot | A1 | POT2 |
-| LFO speed pot | A2 | POT3 |
-| Gate input | A3 / D17 | - |
-| Kill input | D9 | - |
-| LFO pause input | D10 | - |
-| Waveform / manual gate button | D4 | - |
-| LFO LED | D3 | - |
+| Function | Arduino pin | MOD1 jack/control | POT |
+|---|---:|---:|---:|
+| Audio output | D11 | F4 | - |
+| Pitch pot | A0 | - | POT1 |
+| LFO depth pot | A1 | - | POT2 |
+| LFO speed pot | A2 | - | POT3 |
+| Gate input | A3 / D17 | F1 | - |
+| Kill input | D9 | F2 | - |
+| LFO pause input | D10 | F3 | - |
+| Waveform / manual gate button | D4 | Button | - |
+| LFO LED | D3 | LED | - |
 
 ## Repository contents
 
