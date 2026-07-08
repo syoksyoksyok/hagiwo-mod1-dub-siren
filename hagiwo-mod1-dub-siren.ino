@@ -50,6 +50,10 @@ struct AudioConfig {
   static const int AMP_MAX = 600;
   static const unsigned long DEBOUNCE_DELAY = 30;
   static const unsigned long LONG_PRESS_DURATION = 230;
+  static const unsigned long AUDIO_EDGE_STABLE_MS = 3;
+  static const unsigned int STOP_FADE_COMPARE = 63;
+  static const uint8_t STOP_FADE_TICKS = 128;
+  static const uint8_t STOP_FADE_MAX_DUTY = 128;
   static const unsigned int LED_PWM_PERIOD_US = 4096;
 };
 
@@ -69,6 +73,9 @@ struct State {
   unsigned long buttonPressStart = 0;
   bool buttonWasPressed = false;
   bool buttonLongPressActive = false;
+  bool audioActiveStable = false;
+  bool audioActiveCandidate = false;
+  unsigned long audioActiveCandidateSince = 0;
   bool lastAudioActive = false;
   uint8_t ledBrightness = 0;
 } state;
@@ -82,6 +89,10 @@ struct PotValues {
 
 #if USE_TIMER1_AUDIO_ENGINE
 volatile bool audioEngineActive = false;
+volatile bool audioStopPending = false;
+volatile bool speakerOutputHigh = false;
+volatile uint8_t audioStopFadeTicks = 0;
+volatile uint8_t audioStopFadeAccumulator = 0;
 volatile uint16_t audioCurrentCompare = 0;
 volatile uint16_t audioPendingCompare = 0;
 
@@ -95,7 +106,32 @@ uint16_t frequencyToTimerCompare(int frequency) {
 ISR(TIMER1_COMPA_vect) {
   if (!audioEngineActive) return;
 
+  if (audioStopPending) {
+    if (audioStopFadeTicks == 0) {
+      audioEngineActive = false;
+      audioStopPending = false;
+      speakerOutputHigh = false;
+      TIMSK1 &= ~_BV(OCIE1A);
+      PORTB &= ~_BV(PB3);
+      return;
+    }
+
+    uint8_t duty = (static_cast<uint16_t>(audioStopFadeTicks) * AudioConfig::STOP_FADE_MAX_DUTY) / AudioConfig::STOP_FADE_TICKS;
+    uint16_t accumulator = static_cast<uint16_t>(audioStopFadeAccumulator) + duty;
+    audioStopFadeAccumulator = static_cast<uint8_t>(accumulator);
+    speakerOutputHigh = accumulator >= 256;
+    if (speakerOutputHigh) {
+      PORTB |= _BV(PB3);
+    } else {
+      PORTB &= ~_BV(PB3);
+    }
+    audioStopFadeTicks--;
+    return;
+  }
+
   PINB = _BV(PB3);
+  speakerOutputHigh = !speakerOutputHigh;
+
   if (audioPendingCompare != audioCurrentCompare) {
     audioCurrentCompare = audioPendingCompare;
     OCR1A = audioCurrentCompare;
@@ -117,9 +153,14 @@ void setAudioFrequency(int frequency) {
   uint16_t compare = frequencyToTimerCompare(frequency);
 
   noInterrupts();
+  bool wasStopPending = audioStopPending;
   audioPendingCompare = compare;
-  if (!audioEngineActive) {
+  audioStopPending = false;
+  audioStopFadeTicks = 0;
+  audioStopFadeAccumulator = 0;
+  if (!audioEngineActive || wasStopPending) {
     PORTB &= ~_BV(PB3);
+    speakerOutputHigh = false;
     audioCurrentCompare = compare;
     OCR1A = compare;
     TCNT1 = 0;
@@ -131,7 +172,22 @@ void setAudioFrequency(int frequency) {
 
 void stopAudioOutput() {
   noInterrupts();
+  if (audioEngineActive) {
+    if (!audioStopPending) {
+      audioStopPending = true;
+      audioStopFadeTicks = AudioConfig::STOP_FADE_TICKS;
+      audioStopFadeAccumulator = 0;
+      OCR1A = AudioConfig::STOP_FADE_COMPARE;
+      TCNT1 = 0;
+    }
+    interrupts();
+    return;
+  }
   audioEngineActive = false;
+  audioStopPending = false;
+  audioStopFadeTicks = 0;
+  audioStopFadeAccumulator = 0;
+  speakerOutputHigh = false;
   TIMSK1 &= ~_BV(OCIE1A);
   interrupts();
   digitalWrite(PinConfig::SPEAKER, LOW);
@@ -210,7 +266,17 @@ void loop() {
   bool killActive = digitalRead(PinConfig::KILL_INPUT) == HIGH;
   bool lfoPaused = digitalRead(PinConfig::LFO_PAUSE_INPUT) == HIGH;
   bool audioRequested = gateActive || state.buttonLongPressActive;
-  bool audioActive = audioRequested && !killActive;
+  bool rawAudioActive = audioRequested && !killActive;
+  if (rawAudioActive == state.audioActiveStable) {
+    state.audioActiveCandidate = rawAudioActive;
+    state.audioActiveCandidateSince = now;
+  } else if (rawAudioActive != state.audioActiveCandidate) {
+    state.audioActiveCandidate = rawAudioActive;
+    state.audioActiveCandidateSince = now;
+  } else if (now - state.audioActiveCandidateSince >= AudioConfig::AUDIO_EDGE_STABLE_MS) {
+    state.audioActiveStable = rawAudioActive;
+  }
+  bool audioActive = state.audioActiveStable;
   if (!audioActive && state.lastAudioActive) {
     stopAudioOutput();
   }
