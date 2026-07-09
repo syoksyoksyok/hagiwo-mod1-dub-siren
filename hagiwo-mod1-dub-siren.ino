@@ -54,6 +54,8 @@ struct AudioConfig {
   static const unsigned int STOP_FADE_COMPARE = 63;
   static const uint8_t STOP_FADE_TICKS = 128;
   static const uint8_t STOP_FADE_MAX_DUTY = 128;
+  static const uint8_t START_FADE_TICKS = 128;
+  static const uint8_t START_FADE_MAX_DUTY = 128;
   static const unsigned int LED_PWM_PERIOD_US = 4096;
 };
 
@@ -76,7 +78,9 @@ struct State {
   bool audioActiveStable = false;
   bool audioActiveCandidate = false;
   unsigned long audioActiveCandidateSince = 0;
+  bool lastAudioRequested = false;
   bool lastAudioActive = false;
+  bool lastKillActive = false;
   uint8_t ledBrightness = 0;
 } state;
 
@@ -90,9 +94,13 @@ struct PotValues {
 #if USE_TIMER1_AUDIO_ENGINE
 volatile bool audioEngineActive = false;
 volatile bool audioStopPending = false;
+volatile bool audioStartPending = false;
+volatile bool audioStartFadeRequested = false;
 volatile bool speakerOutputHigh = false;
 volatile uint8_t audioStopFadeTicks = 0;
 volatile uint8_t audioStopFadeAccumulator = 0;
+volatile uint8_t audioStartFadeTicks = 0;
+volatile uint8_t audioStartFadeAccumulator = 0;
 volatile uint16_t audioCurrentCompare = 0;
 volatile uint16_t audioPendingCompare = 0;
 
@@ -129,6 +137,29 @@ ISR(TIMER1_COMPA_vect) {
     return;
   }
 
+  if (audioStartPending) {
+    if (audioStartFadeTicks >= AudioConfig::START_FADE_TICKS) {
+      audioStartPending = false;
+      speakerOutputHigh = false;
+      PORTB &= ~_BV(PB3);
+      OCR1A = audioCurrentCompare;
+      TCNT1 = 0;
+      return;
+    }
+
+    uint8_t duty = ((static_cast<uint16_t>(audioStartFadeTicks) + 1) * AudioConfig::START_FADE_MAX_DUTY) / AudioConfig::START_FADE_TICKS;
+    uint16_t accumulator = static_cast<uint16_t>(audioStartFadeAccumulator) + duty;
+    audioStartFadeAccumulator = static_cast<uint8_t>(accumulator);
+    speakerOutputHigh = accumulator >= 256;
+    if (speakerOutputHigh) {
+      PORTB |= _BV(PB3);
+    } else {
+      PORTB &= ~_BV(PB3);
+    }
+    audioStartFadeTicks++;
+    return;
+  }
+
   PINB = _BV(PB3);
   speakerOutputHigh = !speakerOutputHigh;
 
@@ -154,6 +185,8 @@ void setAudioFrequency(int frequency) {
 
   noInterrupts();
   bool wasStopPending = audioStopPending;
+  bool startWithFade = audioStartFadeRequested && !wasStopPending;
+  audioStartFadeRequested = false;
   audioPendingCompare = compare;
   audioStopPending = false;
   audioStopFadeTicks = 0;
@@ -162,8 +195,11 @@ void setAudioFrequency(int frequency) {
     PORTB &= ~_BV(PB3);
     speakerOutputHigh = false;
     audioCurrentCompare = compare;
-    OCR1A = compare;
+    OCR1A = startWithFade ? AudioConfig::STOP_FADE_COMPARE : compare;
     TCNT1 = 0;
+    audioStartPending = startWithFade;
+    audioStartFadeTicks = 0;
+    audioStartFadeAccumulator = 0;
     audioEngineActive = true;
     TIMSK1 |= _BV(OCIE1A);
   }
@@ -187,6 +223,26 @@ void stopAudioOutput() {
   audioStopPending = false;
   audioStopFadeTicks = 0;
   audioStopFadeAccumulator = 0;
+  audioStartPending = false;
+  audioStartFadeRequested = false;
+  audioStartFadeTicks = 0;
+  audioStartFadeAccumulator = 0;
+  speakerOutputHigh = false;
+  TIMSK1 &= ~_BV(OCIE1A);
+  interrupts();
+  digitalWrite(PinConfig::SPEAKER, LOW);
+}
+
+void stopAudioOutputImmediate() {
+  noInterrupts();
+  audioEngineActive = false;
+  audioStopPending = false;
+  audioStopFadeTicks = 0;
+  audioStopFadeAccumulator = 0;
+  audioStartPending = false;
+  audioStartFadeRequested = false;
+  audioStartFadeTicks = 0;
+  audioStartFadeAccumulator = 0;
   speakerOutputHigh = false;
   TIMSK1 &= ~_BV(OCIE1A);
   interrupts();
@@ -203,6 +259,10 @@ void setAudioFrequency(int frequency) {
 void stopAudioOutput() {
   noTone(PinConfig::SPEAKER);
   digitalWrite(PinConfig::SPEAKER, LOW);
+}
+
+void stopAudioOutputImmediate() {
+  stopAudioOutput();
 }
 #endif
 
@@ -265,27 +325,46 @@ void loop() {
   bool gateActive = digitalRead(PinConfig::GATE_INPUT) == HIGH;
   bool killActive = digitalRead(PinConfig::KILL_INPUT) == HIGH;
   bool lfoPaused = digitalRead(PinConfig::LFO_PAUSE_INPUT) == HIGH;
-  bool audioRequested = gateActive || state.buttonLongPressActive;
-  bool rawAudioActive = audioRequested && !killActive;
-  if (rawAudioActive == state.audioActiveStable) {
-    state.audioActiveCandidate = rawAudioActive;
+  bool rawAudioRequested = gateActive || state.buttonLongPressActive;
+  if (rawAudioRequested == state.audioActiveStable) {
+    state.audioActiveCandidate = rawAudioRequested;
     state.audioActiveCandidateSince = now;
-  } else if (rawAudioActive != state.audioActiveCandidate) {
-    state.audioActiveCandidate = rawAudioActive;
+  } else if (rawAudioRequested != state.audioActiveCandidate) {
+    state.audioActiveCandidate = rawAudioRequested;
     state.audioActiveCandidateSince = now;
   } else if (now - state.audioActiveCandidateSince >= AudioConfig::AUDIO_EDGE_STABLE_MS) {
-    state.audioActiveStable = rawAudioActive;
+    state.audioActiveStable = rawAudioRequested;
   }
-  bool audioActive = state.audioActiveStable;
+  bool audioRequested = state.audioActiveStable;
+  bool audioActive = audioRequested && !killActive;
+  bool killReleased = state.lastKillActive && !killActive;
   if (!audioActive && state.lastAudioActive) {
-    stopAudioOutput();
+    if (killActive) {
+      stopAudioOutputImmediate();
+    } else {
+      stopAudioOutput();
+    }
   }
 
-  if (audioActive && !state.lastAudioActive) {
+  if (audioRequested && !state.lastAudioRequested) {
     state.angle = 0.0;
     state.lastUpdateTime = 0;
+    if (!killActive) {
+      audioStartFadeRequested = true;
+    }
   }
+
+  if (killReleased && audioRequested) {
+    float lfoValue = calculateLfoValue(pots.amplitude);
+    int modulatedFreq = static_cast<int>(pots.baseFreq + lfoValue);
+    if (modulatedFreq < AudioConfig::MIN_FREQ) modulatedFreq = AudioConfig::MIN_FREQ;
+    if (modulatedFreq > AudioConfig::MAX_FREQ) modulatedFreq = AudioConfig::MAX_FREQ;
+    setAudioFrequency(modulatedFreq);
+  }
+
+  state.lastAudioRequested = audioRequested;
   state.lastAudioActive = audioActive;
+  state.lastKillActive = killActive;
 
   updateNormalOperation(pots.baseFreq, pots.amplitude, pots.step, audioActive, lfoPaused);
   updateLedPwm();
