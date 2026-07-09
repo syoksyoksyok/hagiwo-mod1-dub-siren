@@ -128,7 +128,7 @@ In the current implementation, POT3 controls only LFO speed. Sound on/off is con
 
 ### 3.4 GATE Input
 
-`A3 / D17` is read as a digital input. Sound is output on D11 only while the GATE input is HIGH. When it is LOW, the audio engine is stopped. When sound changes from inactive to active, `state.angle` is reset to `0.0` and the LFO phase restarts from the beginning. The actual reset condition is not only the GATE state; it is the transition from inactive audio to active audio, including the D9 KILL input and D4 button hold. See "7. GATE Input and Sound Output Behavior" for details.
+`A3 / D17` is read as a digital input. Sound is output on D11 only while the GATE input is HIGH. When it is LOW, the audio engine is stopped. When sound changes from inactive to active, `state.angle` is not reset, so the LFO phase continues from its current position. The same applies when sound starts from the D4 button hold. See "7. GATE Input and Sound Output Behavior" for details.
 
 Because the F1 circuit has an `R12 100k` pulldown, the code configures the pin as `INPUT` and does not use `INPUT_PULLUP`.
 
@@ -235,7 +235,7 @@ In the current implementation, POT3 does not control silence. Sound on/off is co
 - D9 KILL LOW and either GATE HIGH or button hold active: call `updateNormalOperation()` and output a square wave on D11.
 - D9 KILL LOW, GATE LOW, and no button hold: stop the audio engine and drive D11 LOW. The LED continues showing the LFO regardless of the audio state.
 
-When audio changes from inactive to active, the sketch sets `state.angle = 0.0` and `state.lastUpdateTime = 0`. This restarts the LFO from the beginning when sound starts by GATE or button hold. While D10 LFO PAUSE is HIGH, the LFO phase does not advance even during sound output.
+When audio changes from inactive to active, the sketch does not change `state.angle`. The LFO continues from its current position when sound starts by GATE or button hold. On sound start, the current LFO value is used to set the output frequency immediately, and only the start fade is applied. While D10 LFO PAUSE is HIGH, the LFO phase does not advance even during sound output.
 
 ## 8. Implementation Notes
 

@@ -347,10 +347,13 @@ void loop() {
   }
 
   if (audioRequested && !state.lastAudioRequested) {
-    state.angle = 0.0;
-    state.lastUpdateTime = 0;
     if (!killActive) {
       audioStartFadeRequested = true;
+      float lfoValue = calculateLfoValue(pots.amplitude);
+      int modulatedFreq = static_cast<int>(pots.baseFreq + lfoValue);
+      if (modulatedFreq < AudioConfig::MIN_FREQ) modulatedFreq = AudioConfig::MIN_FREQ;
+      if (modulatedFreq > AudioConfig::MAX_FREQ) modulatedFreq = AudioConfig::MAX_FREQ;
+      setAudioFrequency(modulatedFreq);
     }
   }
 
