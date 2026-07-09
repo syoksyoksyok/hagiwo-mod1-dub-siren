@@ -185,14 +185,16 @@ The sine waveform changes smoothly from `-amplitude` to `+amplitude`.
 
 ### 5.2 SQUARE
 
-The code comments describe this as `Square-like wave with curved transition sections`. The implementation is not a perfect square wave; it combines fixed values and sine-curve sections.
+The square waveform switches directly between positive and negative modulation values once per LFO cycle.
 
-- `0 <= angle < PI/2`: `+amplitude`
-- `PI/2 <= angle < PI`: `amplitude * sin(...)`
-- `PI <= angle < 1.5PI`: `-amplitude`
-- `1.5PI <= angle < 2PI`: `-amplitude * sin((angle - 1.5 * PI) * 2)`
+```cpp
+state.angle < PI ? amplitude : -amplitude
+```
 
-There are abrupt value changes at some section boundaries. The waveform is not fully smooth.
+- `0 <= angle < PI`: `+amplitude`
+- `PI <= angle < 2PI`: `-amplitude`
+
+This is an intentionally hard-edged LFO waveform. It creates one high section and one low section per LFO cycle.
 
 ### 5.3 SAWTOOTH
 
@@ -241,7 +243,7 @@ Potentiometer readings use a 2-sample average with the previous smoothed value. 
 
 `A3 / D17` is configured as `INPUT` because the board is expected to provide a pulldown. `INPUT_PULLUP` is not used because it would bias the external GATE signal.
 
-The current audio engine controls only the D11 square-wave frequency, so this sketch does not implement volume fades or true amplitude control.
+The current audio engine controls only the D11 square-wave frequency, so this sketch does not implement true amplitude control. To reduce output-stop clicks, it uses a short stop-only pseudo fade-out by reducing the output pulse density before driving D11 LOW.
 
 D3 hardware PWM uses Timer2 on the ATmega328P, which can conflict with the `tone()` fallback that remains in the source. For this reason, LED brightness is controlled by software PWM using `micros()` instead of `analogWrite()`. LED brightness is continuously converted from the LFO value into a 0-to-maximum brightness range, so slow LED movement is still visible when A2 is near the far-left position and the LFO is very slow.
 
@@ -274,17 +276,17 @@ This code creates a fractional step value by mapping `STEP_MIN * 1000` and `STEP
 
 ## 10. Implementation Notes and Possible Improvements
 
-### 10.1 Square-Wave Output Cannot Fade Volume
+### 10.1 Square-Wave Output Has No True Amplitude Control
 
-The current implementation does not include volume sweep processing. The D11 square-wave output controls only frequency and has no true amplitude control.
+The D11 square-wave output controls only frequency and has no true amplitude control. The current implementation includes a short stop-only pseudo fade-out to reduce output-stop clicks, but it is not a true volume envelope.
 
-To reduce pop noise with a real fade, a different method would be needed, such as PWM output, an external VCA, a DAC, or timer-interrupt-based waveform generation.
+A real fade or voltage-controlled amplitude would require a different method, such as PWM output, an external VCA, a DAC, or timer-interrupt-based waveform generation.
 
-### 10.2 SQUARE Waveform Has Boundary Discontinuities
+### 10.2 SQUARE Waveform Has Intentional Hard Edges
 
-The SQUARE waveform is described in the code as `Square-like wave with curved transition sections`, but some section boundaries include abrupt jumps.
+The SQUARE LFO waveform switches directly between `+amplitude` and `-amplitude` at the half-cycle boundary. This is intentional and gives the waveform its square behavior.
 
-For example, just after `angle` reaches `PI/2`, the return value jumps from `+amplitude` to `0`. If abrupt frequency changes should be avoided, the waveform design could be revised.
+If smoother pitch movement is desired, use `SINE`, `SAWTOOTH`, or `REVERSE_SAWTOOTH`, or revise the SQUARE waveform to add a short transition region.
 
 ### 10.3 First Potentiometer Reading Can Be Low
 
