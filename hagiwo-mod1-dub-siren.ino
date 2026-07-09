@@ -352,20 +352,7 @@ float calculateLfoValue(float amplitude) {
     case SINE:
       return sin(state.angle) * amplitude;
     case SQUARE:
-      // Square-like wave with curved transition sections
-      if (state.angle < PI) {
-        if (state.angle < PI / 2) {
-          return amplitude;
-        } else {
-          return amplitude * sin((state.angle - PI / 2) * 2);
-        }
-      } else {
-        if (state.angle < PI * 1.5) {
-          return -amplitude;
-        } else {
-          return -amplitude * sin((state.angle - PI * 1.5) * 2);
-        }
-      }
+      return state.angle < PI ? amplitude : -amplitude;
     case SAWTOOTH:
       // Linear slope from -amplitude to +amplitude
       return ((state.angle / TWO_PI) * 2 - 1) * amplitude;
