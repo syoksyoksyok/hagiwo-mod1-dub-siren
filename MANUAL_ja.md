@@ -10,7 +10,7 @@
 
 | MOD1 signal | Arduino pin | Role |
 |---|---:|---|
-| POT1 | A0 | ピッチ |
+| POT1 | A0 | VCOピッチ |
 | POT2 | A1 | LFO 深さ |
 | POT3 | A2 | LFO 速度 |
 | F1 | A3 / D17 | ゲート入力 |
