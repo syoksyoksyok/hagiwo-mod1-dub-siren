@@ -10,13 +10,13 @@
 
 | MOD1 signal | Arduino pin | Role |
 |---|---:|---|
-| F4 | D11 | オーディオ出力 |
 | POT1 | A0 | ピッチ |
 | POT2 | A1 | LFO 深さ |
 | POT3 | A2 | LFO 速度 |
 | F1 | A3 / D17 | ゲート入力 |
 | F2 | D9 | キル入力 |
 | F3 | D10 | LFO ポーズ入力 |
+| F4 | D11 | オーディオ出力 |
 | Button | D4 | 波形選択 / 手動ゲート |
 | LED | D3 | LFO インジケータ |
 
