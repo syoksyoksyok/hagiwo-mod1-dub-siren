@@ -8,7 +8,7 @@
 
 ## 接続
 
-| MOD1 signal | Arduino pin | Role |
+| MOD1 Panel Labels | Arduino pin | Role |
 |---|---:|---|
 | POT1 | A0 | VCOピッチ |
 | POT2 | A1 | LFO 深さ |
