@@ -162,9 +162,9 @@ LFO 波形は次の順に切り替わります。
 通常動作時、周波数は次のように決定されます。
 
 1. ポテンショメータから `baseFreq`、`amplitude`、`step` を読み取ります。
-2. D9 KILL 入力が HIGH の場合、オーディオ状態を強制的に非アクティブにします。
-3. KILL が LOW で、A3 / D17 GATE 入力または D4 ボタン長押しのどちらかが有効なら、オーディオはアクティブです。両方とも無効なら、オーディオエンジンを停止します。
-4. オーディオが非アクティブからアクティブへ変化したら、`state.angle` を `0.0` に設定します。
+2. D9 KILL 入力が LOW で、A3 / D17 GATE 入力または D4 ボタン長押しのどちらかが有効なら、オーディオはアクティブです。KILL が HIGH の場合は、GATE やボタン状態に関係なく強制ミュートします。
+3. KILL が押された瞬間は `stopAudioOutputImmediate()` で即時停止します。GATE やボタン長押しが解除された通常停止では `stopAudioOutput()` による短い疑似フェード停止を行います。
+4. オーディオが非アクティブからアクティブへ変化しても、`state.angle` はリセットしません。LFO 位相は現在位置から継続します。
 5. D10 LFO PAUSE 入力が LOW の場合、`step` を `state.angle` に加算します。HIGH の場合は加算しません。
 6. `state.angle` が `TWO_PI` 以上の場合、`TWO_PI` を引いて位相を折り返します。
 7. 現在の波形に応じて `lfoValue` を計算します。
@@ -224,16 +224,22 @@ state.angle < PI ? amplitude : -amplitude
 | `buttonPressStart` | ボタンが押された時刻 |
 | `buttonWasPressed` | 前回ループでボタンが押されていたか |
 | `buttonLongPressActive` | ボタン長押しによる手動発音が有効か |
-| `lastAudioActive` | 前回ループでオーディオがアクティブだったか。立ち上がり検出に使用 |
+| `audioActiveStable` | 3ms の安定判定後に採用された発音要求状態 |
+| `audioActiveCandidate` | 安定判定中の発音要求候補 |
+| `audioActiveCandidateSince` | 発音要求候補が変化した時刻 |
+| `lastAudioRequested` | 前回ループで GATE またはボタン長押しによる発音要求があったか |
+| `lastAudioActive` | 前回ループで KILL を含めた最終的なオーディオ状態がアクティブだったか。通常停止判定に使用 |
+| `lastKillActive` | 前回ループで KILL 入力が HIGH だったか。KILL 押下と解除の検出に使用 |
 | `ledBrightness` | LFO 値と LFO 深さから計算されるソフトウェア PWM LED 輝度。範囲は 0-255 |
 
 ## 7. GATE 入力と発音動作
 
 現在の実装では、POT3 は無音制御を行いません。発音のオン/オフは A3 / D17 GATE 入力、D4 ボタン長押し、D9 KILL 入力で制御されます。
 
-- D9 KILL HIGH: GATE やボタン状態に関係なく、オーディオエンジンを停止して強制ミュートします。
+- D9 KILL が HIGH になった瞬間: `stopAudioOutputImmediate()` でオーディオエンジンを即時停止し、D11 を LOW にします。
+- D9 KILL HIGH: GATE やボタン状態に関係なく、強制ミュートを維持します。
 - D9 KILL LOW かつ GATE HIGH またはボタン長押しが有効: `updateNormalOperation()` を呼び、D11 に矩形波を出力します。
-- D9 KILL LOW、GATE LOW、ボタン長押しなし: オーディオエンジンを停止し、D11 を LOW にします。LED はオーディオ状態に関係なく LFO を表示し続けます。
+- D9 KILL LOW、GATE LOW、ボタン長押しなし: `stopAudioOutput()` による短い疑似フェード停止の後、D11 を LOW にします。LED はオーディオ状態に関係なく LFO を表示し続けます。
 
 オーディオが非アクティブからアクティブへ変化しても、スケッチは `state.angle` を変更しません。GATE またはボタン長押しで発音が始まるときも、LFO は現在位置から継続します。発音開始時は現在の LFO 値から周波数を即時設定し、開始フェードだけを適用します。D10 LFO PAUSE が HIGH の間は、発音中でも LFO 位相は進みません。
 
