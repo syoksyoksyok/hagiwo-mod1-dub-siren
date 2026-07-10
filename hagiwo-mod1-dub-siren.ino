@@ -320,10 +320,15 @@ void loop() {
     state.buttonLongPressActive = false;
   }
 
+  bool killActive = digitalRead(PinConfig::KILL_INPUT) == HIGH;
+  bool killPressed = killActive && !state.lastKillActive;
+  if (killPressed) {
+    stopAudioOutputImmediate();
+  }
+
   PotValues pots = readPotValues();
 
   bool gateActive = digitalRead(PinConfig::GATE_INPUT) == HIGH;
-  bool killActive = digitalRead(PinConfig::KILL_INPUT) == HIGH;
   bool lfoPaused = digitalRead(PinConfig::LFO_PAUSE_INPUT) == HIGH;
   bool rawAudioRequested = gateActive || state.buttonLongPressActive;
   if (rawAudioRequested == state.audioActiveStable) {
@@ -338,12 +343,8 @@ void loop() {
   bool audioRequested = state.audioActiveStable;
   bool audioActive = audioRequested && !killActive;
   bool killReleased = state.lastKillActive && !killActive;
-  if (!audioActive && state.lastAudioActive) {
-    if (killActive) {
-      stopAudioOutputImmediate();
-    } else {
-      stopAudioOutput();
-    }
+  if (!killPressed && !audioActive && state.lastAudioActive) {
+    stopAudioOutput();
   }
 
   if (audioRequested && !state.lastAudioRequested) {
