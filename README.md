@@ -27,7 +27,7 @@ HAGIWO MOD1 は HAGIWO さんによって設計されています。
 POT1で VCO の基本ピッチ、POT2で LFO の深さ、POT3(A2)で LFO の速さを調整します。
 LFO はピッチを変調し、LED は LFO の動きを LFO 深さに応じた点滅で表示します。
 
-## 接続
+## 動作
 | パネル表記 | Arduino ピン | 役割 |
 |---|---:|---|
 | POT1 | A0 | VCO ピッチ |
