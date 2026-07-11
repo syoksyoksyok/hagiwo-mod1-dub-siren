@@ -1,5 +1,6 @@
 # HAGIWO MOD1 Dub Siren
-An Arduino Nano / ATmega328P sketch for the HAGIWO MOD1 that turns it into a dub siren.
+An Arduino Nano / ATmega328P sketch for a HAGIWO MOD1-based dub siren.
+This firmware is designed for HAGIWO MOD1 hardware.
 The HAGIWO MOD1 was designed by HAGIWO.
 
 Current version: `v1.0.0`
@@ -24,19 +25,19 @@ This sketch turns the HAGIWO MOD1 into a dub siren machine.
 
 While the onboard button is held down, or while a HIGH signal is applied to the F1 jack (A3 / D17), a square-wave siren sound is output from the F4 jack (D11).
 POT1 controls the VCO base pitch, POT2 controls the LFO depth, and POT3 (A2) controls the LFO speed.
-The LFO modulates the pitch. The LED follows the LFO, with its brightness range determined by the LFO depth.
+The LFO modulates the pitch, and the LED indicates the LFO movement with brightness variation based on the LFO depth.
 
-## Connections
+## Control / Function Reference
 | Panel label | Arduino pin | Function |
 |---|---:|---|
 | POT1 | A0 | VCO pitch |
 | POT2 | A1 | LFO depth |
 | POT3 | A2 | LFO speed |
-| F1 jack | A3 / D17 | Gate input |
+| F1 jack | A3 / D17 | Gate input (sound output) |
 | F2 jack | D9 | Kill input |
 | F3 jack | D10 | LFO pause input |
 | F4 jack | D11 | Audio output |
-| Button | D4 | Waveform selection / manual gate |
+| Button | D4 | Short press: waveform selection / Long press: manual sound output |
 | LED | D3 | LFO indicator |
 
 Connect the F4 jack (D11) to a mixer or downstream module.
@@ -44,21 +45,22 @@ The output is not line-level audio; it is a 5V square wave from the Arduino.
 When connecting it to external audio equipment, use a mixer input or attenuator and begin with the volume set low.
 Do not connect headphones or passive speakers directly.
 
-External signals connected to F1, F2, and F3 must remain within the 0V to 5V range.
-Directly connecting a Eurorack or other external signal that falls below 0V or exceeds 5V may damage the circuit.
+External signals connected to F1, F2, and F3 must remain within the 0V to 5V range and must not contain negative voltages.
+Directly connecting signals that contain negative voltages, such as some Eurorack signals, or signals that exceed 5V may damage the circuit.
 Always condition external signals to the appropriate range and use a common GND when connecting external equipment.
 
 ## Basic Operation
 - POT1 (A0): Adjusts the base pitch.
-- POT2 (A1): Adjusts the depth of LFO pitch modulation. It also determines the range of the LED brightness variation.
+- POT2 (A1): Adjusts the depth of LFO pitch modulation. It also affects the depth of the LED brightness variation.
 - POT3 (A2): Adjusts the LFO speed. Even near the fully counterclockwise position, the LFO does not stop and continues moving very slowly.
 - F1 jack (A3 / D17): Produces sound only while the input is HIGH.
 - F2 jack (D9): Forces the output to mute while the input is HIGH. This takes priority over the gate and button.
-- F3 jack (D10): Pauses LFO movement while the input is HIGH.
+- F3 jack (D10): Pauses the LFO movement while the input is HIGH.
 - Button (D4): A short press of less than 0.23 seconds changes the LFO waveform. Holding it for 0.23 seconds or longer manually produces sound for as long as the button remains pressed.
-- LED (D3): Follows the LFO movement. Its brightness range depends on the LFO depth.
+- LED (D3): Indicates the LFO speed and depth.
 
 The LFO waveforms cycle in the following order: SINE, SQUARE, SAWTOOTH, and REVERSE SAWTOOTH.
+
 
 ## Troubleshooting
 - Make sure the output is being taken from the F4 jack (D11).
