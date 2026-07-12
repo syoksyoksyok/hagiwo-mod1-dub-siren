@@ -28,7 +28,7 @@ POT1 controls the VCO base pitch, POT2 controls the LFO depth, and POT3 (A2) con
 The LFO modulates the pitch, and the LED indicates the LFO movement with brightness variation based on the LFO depth.
 
 ## Control / Function Reference
-| Panel label | Arduino pin | Function |
+| Control | Arduino pin | Function |
 |---|---:|---|
 | POT1 | A0 | VCO pitch |
 | POT2 | A1 | LFO depth |
@@ -39,6 +39,9 @@ The LFO modulates the pitch, and the LED indicates the LFO movement with brightn
 | F4 jack | D11 | Audio output |
 | Button | D4 | Short press: waveform selection / Long press: manual sound output |
 | LED | D3 | LFO indicator |
+
+The LFO waveforms cycle in the following order:
+SINE, SQUARE, SAWTOOTH, and REVERSE SAWTOOTH.
 
 Connect the F4 jack (D11) to a mixer or downstream module.
 The output is not line-level audio; it is a 5V square wave from the Arduino.
@@ -59,7 +62,6 @@ Always condition external signals to the appropriate range and use a common GND 
 - Button (D4): A short press of less than 0.23 seconds changes the LFO waveform. Holding it for 0.23 seconds or longer manually produces sound for as long as the button remains pressed.
 - LED (D3): Indicates the LFO speed and depth.
 
-The LFO waveforms cycle in the following order: SINE, SQUARE, SAWTOOTH, and REVERSE SAWTOOTH.
 
 
 ## Troubleshooting
